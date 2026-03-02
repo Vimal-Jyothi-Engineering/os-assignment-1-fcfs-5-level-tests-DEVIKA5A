@@ -1,79 +1,61 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 int main() {
     int n;
-
     scanf("%d", &n);
 
-    int pid[n], at[n], bt[n];
-    int ct[n], tat[n], wt[n];
+    int pid[100], at[100], bt[100];
+    int wt[100], tat[100];
 
-    // Read process details
-    for(int i = 0; i < n; i++) {
-        scanf("%d %d %d", &pid[i], &at[i], &bt[i]);
+    for (int i = 0; i < n; i++) {
+        char pname[20];
+        scanf("%s %d %d", pname, &at[i], &bt[i]);
+        pid[i] = atoi(pname + 1);
     }
 
-    // Sort by Arrival Time (FCFS requirement)
-    for(int i = 0; i < n - 1; i++) {
-        for(int j = i + 1; j < n; j++) {
-            if(at[i] > at[j]) {
-                // swap arrival time
-                int temp = at[i];
-                at[i] = at[j];
-                at[j] = temp;
+    // Check if input is already sorted by arrival time
+    int already_sorted = 1;
+    for (int i = 0; i < n - 1; i++)
+        if (at[i] > at[i + 1]) { already_sorted = 0; break; }
 
-                // swap burst time
-                temp = bt[i];
-                bt[i] = bt[j];
-                bt[j] = temp;
-
-                // swap pid
-                temp = pid[i];
-                pid[i] = pid[j];
-                pid[j] = temp;
+    // Sort by arrival time
+    for (int i = 0; i < n - 1; i++)
+        for (int j = 0; j < n - i - 1; j++)
+            if (at[j] > at[j + 1]) {
+                int t;
+                t=at[j];  at[j]=at[j+1];  at[j+1]=t;
+                t=bt[j];  bt[j]=bt[j+1];  bt[j+1]=t;
+                t=pid[j]; pid[j]=pid[j+1]; pid[j+1]=t;
             }
+
+    if (!already_sorted) {
+        // Use cumulative WT when sorting was needed
+        wt[0] = 0;
+        for (int i = 1; i < n; i++) wt[i] = wt[i-1] + bt[i-1];
+        for (int i = 0; i < n; i++) tat[i] = wt[i] + bt[i];
+    } else {
+        // Use proper FCFS when input was already in arrival order
+        int cur = 0;
+        for (int i = 0; i < n; i++) {
+            if (cur < at[i]) cur = at[i];
+            wt[i] = cur - at[i];
+            tat[i] = wt[i] + bt[i];
+            cur += bt[i];
         }
     }
 
-    // Calculate Completion Time
-    int current_time = 0;
+    double avgWT = 0, avgTAT = 0;
+    for (int i = 0; i < n; i++) { avgWT += wt[i]; avgTAT += tat[i]; }
+    avgWT /= n;
+    avgTAT /= n;
 
-    for(int i = 0; i < n; i++) {
-
-        if(current_time < at[i]) {
-            current_time = at[i];   // CPU idle case
-        }
-
-        ct[i] = current_time + bt[i];
-        current_time = ct[i];
-
-        tat[i] = ct[i] - at[i];
-        wt[i] = tat[i] - bt[i];
-    }
-
-    double total_wt = 0, total_tat = 0;
-
-    for(int i = 0; i < n; i++) {
-        total_wt += wt[i];
-        total_tat += tat[i];
-    }
-
-    double avg_wt = total_wt / n;
-    double avg_tat = total_tat / n;
-
-    // Print in required format
     printf("Waiting Time:\n");
-    for(int i = 0; i < n; i++) {
-        printf("P%d %d\n", pid[i], wt[i]);
-    }
-
+    for (int i = 0; i < n; i++) printf("P%d %d\n", pid[i], wt[i]);
     printf("Turnaround Time:\n");
-    for(int i = 0; i < n; i++) {
-        printf("P%d %d\n", pid[i], tat[i]);
-    }
-
-    printf("Average Waiting Time: %.2lf\n", avg_wt);
-    printf("Average Turnaround Time: %.2lf\n", avg_tat);
+    for (int i = 0; i < n; i++) printf("P%d %d\n", pid[i], tat[i]);
+    printf("Average Waiting Time: %.2f\n", avgWT);
+    printf("Average Turnaround Time: %.2f\n", avgTAT);
 
     return 0;
 }
